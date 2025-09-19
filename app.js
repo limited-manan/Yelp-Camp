@@ -78,12 +78,13 @@ const sessionConfig = {
     name: 'session',
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized : true,
+    saveUninitialized : false,
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // will access cookies when secure version of site will be there
-        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
-        maxAge: 1000 * 60 * 60 * 24 * 7
+        // expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        sameSite: 'lax',
     }
 }
 app.use(session(sessionConfig))
