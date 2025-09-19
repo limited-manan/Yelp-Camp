@@ -32,12 +32,20 @@ const sanitizeV5 = require('./utils/mongoSanitizeV5.js');
 // 'mongodb://localhost:27017/yelp-camp'
 const dbUrl = process.env.DB_URL
 // const dbUrl = 'mongodb://localhost:27017/yelp-camp'
-mongoose.connect(dbUrl)
-const db = mongoose.connection;
-db.on('error', console.log.bind(console, 'Connection error:'))
-db.once('open', () => {
-    console.log('DataBase Connected')
+
+mongoose.connect(dbUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
 })
+.then(() => console.log("Database connected"))
+.catch(err => console.error("Mongo connection error:", err));
+
+// mongoose.connect(dbUrl)
+// const db = mongoose.connection;
+// db.on('error', console.log.bind(console, 'Connection error:'))
+// db.once('open', () => {
+//     console.log('DataBase Connected')
+// })
 
 
 const app = express();
@@ -57,7 +65,7 @@ const store = MongoStore.create({
     mongoUrl: dbUrl,
     touchAfter: 24 * 60 * 60,
     crypto: {
-        secret: 'thisshouldbeabettersecret!'
+        secret: process.env.SESSION_SECRET
     }
 });
 
@@ -68,19 +76,26 @@ store.on('error' , function(e) {
 const sessionConfig = {
     store,
     name: 'session',
-    secret: 'thisshouldbeabettersecret',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized : true,
     cookie: {
         httpOnly: true,
-        // secure: true, // will access cookies when secure version of site will be there
+        secure: process.env.NODE_ENV === 'production', // will access cookies when secure version of site will be there
         expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
 }
 app.use(session(sessionConfig))
 app.use(flash());
-app.use(helmet())
+// app.use(helmet())
+app.use(
+    helmet({
+        crossOriginEmbedderPolicy: false,
+        contentSecurityPolicy: false,
+    })
+);
+
 
 const scriptSrcUrls = [
     "https://stackpath.bootstrapcdn.com/",
@@ -188,6 +203,11 @@ app.use((err, req, res, next) => {
     // res.send('Oh Boy! Something Went Wrong!!')
 })
 
-app.listen(3000, (req, res) => {
-    console.log('Listening to Port 3000');
-})
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Serving on port ${port}`);
+});
+
+// app.listen(3000, (req, res) => {
+//     console.log('Listening to Port 3000');
+// })
