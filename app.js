@@ -16,6 +16,7 @@ const ExpressError = require('./utils/ExpressError')
 const {campgroundSchema , reviewSchema} = require('./schemas')
 const Review = require('./models/review')
 const session = require('express-session')
+const MongoStore = require('connect-mongo');
 const flash = require('connect-flash')
 const passport = require('passport')
 const LocalStrategy = require('passport-local')
@@ -28,7 +29,10 @@ const reviewRoutes = require('./routes/reviews')
 
 const sanitizeV5 = require('./utils/mongoSanitizeV5.js');
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp')
+// 'mongodb://localhost:27017/yelp-camp'
+const dbUrl = process.env.DB_URL
+// const dbUrl = 'mongodb://localhost:27017/yelp-camp'
+mongoose.connect(dbUrl)
 const db = mongoose.connection;
 db.on('error', console.log.bind(console, 'Connection error:'))
 db.once('open', () => {
@@ -49,7 +53,20 @@ app.use(methodOverride('_method'))
 app.use(express.static(path.join(__dirname,'public')))
 app.use(sanitizeV5({ replaceWith: '_' }));
 
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret: 'thisshouldbeabettersecret!'
+    }
+});
+
+store.on('error' , function(e) {
+    console.log('SESSION STORE ERROR', e)
+})
+
 const sessionConfig = {
+    store,
     name: 'session',
     secret: 'thisshouldbeabettersecret',
     resave: false,
