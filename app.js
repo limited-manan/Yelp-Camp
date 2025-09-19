@@ -50,6 +50,7 @@ mongoose.connect(dbUrl, {
 
 const app = express();
 app.set('query parser', 'extended');
+app.set('trust proxy', 1);
 const path = require('path');
 
 app.engine('ejs', ejsMate)
